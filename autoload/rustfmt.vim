@@ -7,7 +7,6 @@ if exists("g:rustfmt_loaded")
 endif
 let g:rustfmt_loaded = 1
 
-
 if exists("g:rustfmt_disable")
     if g:rustfmt_disable
         finish
@@ -30,24 +29,26 @@ if !exists("g:rustfmt_fail_silently")
     let g:rustfmt_fail_silently = 0
 endif
 
-function! rustfmt#DetectVersion()
+function! s:DetectVersion()
     " Save rustfmt '--help' for feature inspection
-    silent let s:rustfmt_help = system(g:rustfmt_command . " --help")
-    let s:rustfmt_unstable_features = s:rustfmt_help =~# "--unstable-features"
+    if !exists("s:rustfmt_help")
+        silent let s:rustfmt_help = system(g:rustfmt_command . " --help")
+        let s:rustfmt_unstable_features = s:rustfmt_help =~# "--unstable-features"
+    endif
 
     " Build a comparable rustfmt version varible out of its `--version` output:
-    silent let l:rustfmt_version_full = system(g:rustfmt_command . " --version")
-    let l:rustfmt_version_list = matchlist(l:rustfmt_version_full,
-        \    '\vrustfmt ([0-9]+[.][0-9]+[.][0-9]+)')
-    if len(l:rustfmt_version_list) < 3
-        let s:rustfmt_version = "0"
-    else
-        let s:rustfmt_version = l:rustfmt_version_list[1]
+    if !exists('s:rustfmt_version')
+        silent let l:rustfmt_version_full = system(g:rustfmt_command . " --version")
+        let l:rustfmt_version_list = matchlist(l:rustfmt_version_full,
+            \    '\vrustfmt ([0-9]+[.][0-9]+[.][0-9]+)')
+        if len(l:rustfmt_version_list) < 3
+            let s:rustfmt_version = "0"
+        else
+            let s:rustfmt_version = l:rustfmt_version_list[1]
+        endif
     endif
     return s:rustfmt_version
 endfunction
-
-call rustfmt#DetectVersion()
 
 if !exists("g:rustfmt_emit_files")
     let g:rustfmt_emit_files = s:rustfmt_version >= "0.8.2"
@@ -60,6 +61,7 @@ endif
 let s:got_fmt_error = 0
 
 function! rustfmt#Load()
+    call s:DetectVersion()
     " Utility call to get this script loaded, for debugging
 endfunction
 
@@ -228,6 +230,7 @@ function! s:RunRustfmt(command, tmpname, from_writepre)
 endfunction
 
 function! rustfmt#FormatRange(line1, line2)
+    call s:DetectVersion()
     let l:tmpname = tempname()
     call writefile(getline(1, '$'), l:tmpname)
     let command = s:RustfmtCommandRange(l:tmpname, a:line1, a:line2)
@@ -236,10 +239,12 @@ function! rustfmt#FormatRange(line1, line2)
 endfunction
 
 function! rustfmt#Format()
+    call s:DetectVersion()
     call s:RunRustfmt(s:RustfmtCommand(), '', v:false)
 endfunction
 
 function! rustfmt#Cmd()
+    call s:DetectVersion()
     " Mainly for debugging
     return s:RustfmtCommand()
 endfunction
@@ -264,6 +269,7 @@ function! rustfmt#PreWrite()
         return
     endif
 
+    call s:DetectVersion()
     call s:RunRustfmt(s:RustfmtCommand(), '', v:true)
 endfunction
 
