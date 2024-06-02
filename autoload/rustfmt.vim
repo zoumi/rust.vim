@@ -2,6 +2,17 @@
 "
 " Adapted from https://github.com/fatih/vim-go
 " For bugs, patches and license go to https://github.com/rust-lang/rust.vim
+if exists("g:rustfmt_loaded")
+  finish
+endif
+let g:rustfmt_loaded = 1
+
+
+if exists("g:rustfmt_disable")
+    if g:rustfmt_disable
+        finish
+    endif
+endif
 
 if !exists("g:rustfmt_autosave")
     let g:rustfmt_autosave = 0
